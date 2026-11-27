@@ -16,11 +16,13 @@ function App() {
       setLoading(true);
       setError("");
 
+      // Basic Authentication
       const username = "doctosmarttest";
       const password = "$2y$12$9Za7UtNOljRUWVmVrq8yv.ZpuzEhK6yzI.gdKRCxw2EtUfvxySV3S";
 
       const auth = btoa(`${username}:${password}`);
 
+      // API request
       const response = await fetch(
         "/api/patients?user_id=1&clinic_id=1&page_no=0",
         {
@@ -32,40 +34,31 @@ function App() {
         }
       );
 
-      const result = await response.json();
+      const data = await response.json();
 
-      console.log("Full API Response:", result);
+      console.log("API Response:", data);
 
-      if (!response.ok || result.status === false) {
-        throw new Error(result.message || "Failed to fetch patients");
+      if (!response.ok) {
+        throw new Error(data.message || "API request failed");
       }
 
-      // Extract records from possible response structures
-      const patientList =
-        result.data?.patient_list ??
-        result.data?.patients ??
-        result.patient_list ??
-        result.patients ??
-        result.data?.records ??
-        result.records ??
-        result.data ??
-        result;
-
-      if (Array.isArray(patientList)) {
-        setPatients(patientList);
+      // Actual patient array is inside result
+      if (Array.isArray(data.result)) {
+        setPatients(data.result);
       } else {
         setPatients([]);
-        console.log("Patient array not found:", result);
+        throw new Error("Patient records not found");
       }
 
     } catch (err) {
       console.error("Error:", err);
-      setError(err.message || "Failed to load patient records");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Show "-" for empty values
   const getValue = (value) => {
     return value !== null && value !== undefined && value !== ""
       ? value
@@ -74,15 +67,20 @@ function App() {
 
   return (
     <div className="container">
+
       <h1>Patient Management</h1>
-      <p className="subtitle">Patient Records</p>
+      <p className="subtitle">
+        Patient Records
+      </p>
 
       {loading ? (
-        <p className="message">Loading patient records...</p>
+        <p className="message">Loading patients...</p>
       ) : error ? (
         <p className="error">{error}</p>
       ) : (
+
         <div className="table-container">
+
           <table>
             <thead>
               <tr>
@@ -96,61 +94,57 @@ function App() {
             </thead>
 
             <tbody>
+
               {patients.length > 0 ? (
-                patients.map((patient, index) => (
-                  <tr key={patient.id || patient.reg_id || index}>
+                patients.map((patient) => (
+
+                  <tr key={patient.id}>
+
                     <td>
-                      {getValue(
-                        patient.reg_id ??
-                        patient.registration_id ??
-                        patient.id
-                      )}
+                      {getValue(patient.registration_id)}
                     </td>
 
                     <td>
-                      {getValue(
-                        patient.name ??
-                        patient.patient_name ??
-                        patient.full_name
-                      )}
-                    </td>
-
-                    <td>{getValue(patient.gender)}</td>
-
-                    <td>
-                      {getValue(
-                        patient.age ??
-                        patient.patient_age
-                      )}
+                      {getValue(patient.patient_name)}
                     </td>
 
                     <td>
-                      {getValue(
-                        patient.mobile ??
-                        patient.mobile_no ??
-                        patient.phone
-                      )}
+                      {getValue(patient.gender)}
                     </td>
 
                     <td>
-                      {getValue(
-                        patient.address ??
-                        patient.patient_address
-                      )}
+                      {getValue(patient.age)}
                     </td>
+
+                    <td>
+                      {getValue(patient.mobile ?? patient.mobile_no)}
+                    </td>
+
+                    <td>
+                      {getValue(patient.address)}
+                    </td>
+
                   </tr>
+
                 ))
               ) : (
                 <tr>
                   <td colSpan="6" className="message">
-                    No patient records available.
+                    No patients found.
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
+
+          <p className="total">
+            Total Patients: {patients.length} / 200
+          </p>
+
         </div>
       )}
+
     </div>
   );
 }
